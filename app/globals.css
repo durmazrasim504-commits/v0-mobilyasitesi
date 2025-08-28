@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 122 48% 33%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 45 100% 56.1%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 122 70% 95%;
+  --accent-foreground: 122 48% 33%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 122 48% 33%;
+  --radius: 0.25rem;
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 122 48% 33%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 45 100% 56.1%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 122 48% 33%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white px-3 py-1.5 rounded-sm hover:bg-primary-700 transition-colors text-sm;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-white px-3 py-1.5 rounded-sm hover:bg-amber-600 transition-colors text-sm;
+  }
+
+  .btn-outline {
+    @apply border border-gray-300 text-gray-700 px-3 py-1.5 rounded-sm hover:bg-gray-50 transition-colors text-sm;
+  }
+
+  .card {
+    @apply bg-white rounded-sm border border-gray-100 shadow-card overflow-hidden;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-1.5 py-0.5 rounded-sm text-xs font-medium;
+  }
+
+  .badge-discount {
+    @apply badge bg-secondary text-white;
+  }
+
+  .badge-new {
+    @apply badge bg-primary text-white;
+  }
+
+  .input {
+    @apply w-full px-3 py-1.5 text-sm border border-gray-200 rounded-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent;
+  }
+
+  .container-custom {
+    @apply container mx-auto px-4 md:px-6 max-w-6xl;
+  }
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.accordion-content.open {
+  max-height: 500px;
+}
+
+.discount-badge {
+  @apply bg-primary text-white text-xs font-medium px-1.5 py-0.5 rounded-sm;
+}
+
+.add-to-cart-button {
+  @apply bg-primary hover:bg-primary-700 text-white font-medium py-1.5 px-3 rounded-sm w-full text-sm;
+}
+
+.outline-button {
+  @apply border border-gray-200 text-gray-700 font-medium py-1.5 px-3 rounded-sm w-full flex items-center justify-center text-sm;
+}
+
+/* Animasyonlar */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}
