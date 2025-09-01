@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, AlertCircle, Plus, Upload } from "lucide-react"
+import { Loader2, AlertCircle, Plus, Upload, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -22,6 +22,8 @@ export default function Checkout() {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const { cartItems, subtotal, shipping, total, clearCart } = useCart()
+
+  const [currentStep, setCurrentStep] = useState(1) // 1: Personal Info, 2: Payment Methods
 
   // Ödeme bilgilerini ekleyelim
   const { getSetting } = useSiteSettings()
@@ -162,6 +164,61 @@ export default function Checkout() {
       }
       setReceiptFile(file)
     }
+  }
+
+  const validatePersonalInfo = () => {
+    if (isGuest) {
+      if (
+        !guestEmail ||
+        !newAddress.full_name ||
+        !newAddress.phone ||
+        !newAddress.address ||
+        !newAddress.city ||
+        !newAddress.postal_code
+      ) {
+        toast({
+          title: "Hata",
+          description: "Lütfen tüm kişi bilgilerini doldurun.",
+          variant: "destructive",
+        })
+        return false
+      }
+    } else {
+      if (selectedAddressId === "new") {
+        if (
+          !newAddress.full_name ||
+          !newAddress.phone ||
+          !newAddress.address ||
+          !newAddress.city ||
+          !newAddress.postal_code
+        ) {
+          toast({
+            title: "Hata",
+            description: "Lütfen tüm adres bilgilerini doldurun.",
+            variant: "destructive",
+          })
+          return false
+        }
+      } else if (!selectedAddressId || selectedAddressId === 0) {
+        toast({
+          title: "Hata",
+          description: "Lütfen bir adres seçin.",
+          variant: "destructive",
+        })
+        return false
+      }
+    }
+    return true
+  }
+
+  const handleContinueToPayment = () => {
+    if (validatePersonalInfo()) {
+      setCurrentStep(2)
+    }
+  }
+
+  const handleBackToPersonalInfo = () => {
+    setCurrentStep(1)
   }
 
   // app/siparis/page.tsx - handleSubmit fonksiyonu (Final versiyon)
@@ -315,19 +372,19 @@ export default function Checkout() {
           formData.append("file", receiptFile)
           formData.append("orderId", data.order.id.toString())
           formData.append("trackingNumber", data.order.tracking_number || data.order.id.toString())
-          
+
           console.log("Dekont yükleniyor...", {
             orderId: data.order.id,
             trackingNumber: data.order.tracking_number,
             fileName: receiptFile.name,
-            fileSize: receiptFile.size
+            fileSize: receiptFile.size,
           })
 
           const receiptResponse = await fetch("/api/orders/receipt/upload", {
             method: "POST",
             body: formData,
           })
-          
+
           if (!receiptResponse.ok) {
             const errorText = await receiptResponse.text()
             console.error("Dekont yükleme hatası:", errorText)
@@ -391,6 +448,28 @@ export default function Checkout() {
       )}
 
       <div className="container mx-auto px-4">
+        <div className="mb-6">
+          <div className="flex items-center justify-center space-x-4">
+            <div className={`flex items-center ${currentStep >= 1 ? "text-primary" : "text-gray-400"}`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 1 ? "bg-primary text-white" : "bg-gray-200"}`}
+              >
+                1
+              </div>
+              <span className="ml-2 font-medium">Kişi Bilgileri</span>
+            </div>
+            <div className={`w-8 h-0.5 ${currentStep >= 2 ? "bg-primary" : "bg-gray-200"}`}></div>
+            <div className={`flex items-center ${currentStep >= 2 ? "text-primary" : "text-gray-400"}`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 2 ? "bg-primary text-white" : "bg-gray-200"}`}
+              >
+                2
+              </div>
+              <span className="ml-2 font-medium">Ödeme Yöntemi</span>
+            </div>
+          </div>
+        </div>
+
         <h1 className="text-2xl font-bold mb-6">Sipariş Tamamla</h1>
 
         {errorMessage && (
@@ -403,12 +482,11 @@ export default function Checkout() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Shipping Address */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {currentStep === 1 && (
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                <h2 className="text-lg font-bold mb-4">Teslimat Adresi</h2>
+                <h2 className="text-lg font-bold mb-4">Kişi Bilgileri</h2>
 
                 {isGuest ? (
                   // Guest checkout form
@@ -525,7 +603,7 @@ export default function Checkout() {
                       <h3 className="font-medium">Kayıtlı Adresleriniz</h3>
                       <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="flex items-center gap-1">
+                          <Button variant="outline" size="sm" className="flex items-center gap-1 bg-transparent">
                             <Plus className="h-4 w-4" /> Yeni Adres Ekle
                           </Button>
                         </DialogTrigger>
@@ -681,187 +759,257 @@ export default function Checkout() {
                     )}
                   </>
                 )}
-              </div>
 
-              {/* Payment Method */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-bold mb-4">Ödeme Yöntemi</h2>
-                <div className="mb-4">
-                  <RadioGroup defaultValue="bank_transfer" onValueChange={(value) => setPaymentMethod(value)}>
-                    <div className="flex items-center space-x-2 p-3 border rounded-md hover:bg-gray-50">
-                      <RadioGroupItem value="bank_transfer" id="bank_transfer" />
-                      <Label htmlFor="bank_transfer">Banka Havalesi / EFT</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {paymentMethod === "bank_transfer" && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-md">
-                    <h3 className="font-medium mb-2">Havale/EFT Bilgileri</h3>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p>
-                        <span className="font-medium">Banka:</span> {bankName}
-                      </p>
-                      <p>
-                        <span className="font-medium">Hesap Sahibi:</span> {accountHolder}
-                      </p>
-                      <p>
-                        <span className="font-medium">IBAN:</span> {iban}
-                      </p>
-                      <p className="mt-2 text-xs">
-                        Ödemenizi yaptıktan sonra sipariş numaranızı açıklama kısmına yazmayı unutmayınız.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Dekont Yükleme */}
-                {paymentMethod === "bank_transfer" && (
-                  <div className="mb-4">
-                    <Label htmlFor="receipt" className="block mb-2">
-                      Dekont Yükleme <span className="text-red-500">*</span>
-                    </Label>
-                    <div className="flex items-center">
-                      <input
-                        type="file"
-                        id="receipt"
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                        className="hidden"
-                        accept=".pdf"
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center"
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Dekont Yükle (Sadece PDF)
-                      </Button>
-                      {receiptFile && (
-                        <span className="ml-3 text-sm text-gray-600">
-                          {receiptFile.name} ({Math.round(receiptFile.size / 1024)} KB)
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Ödemenizi yaptıktan sonra dekontu PDF formatında yüklemeniz gerekmektedir.
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex items-start bg-yellow-50 p-3 rounded-md">
-                  <AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
-                  <p className="text-sm text-yellow-800">
-                    Ödemenizi yaptıktan sonra sipariş numaranızı açıklama kısmına yazmayı unutmayınız.
-                  </p>
+                <div className="flex justify-end mt-6">
+                  <Button onClick={handleContinueToPayment} className="px-8">
+                    Devam Et
+                  </Button>
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-sm p-6 sticky top-20">
-                <h2 className="text-lg font-bold mb-4">Sipariş Özeti</h2>
+          {currentStep === 2 && (
+            <div className="lg:col-span-2">
+              <div className="mb-4">
+                <Button variant="ghost" onClick={handleBackToPersonalInfo} className="flex items-center">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Kişi Bilgilerine Dön
+                </Button>
+              </div>
 
-                <div className="space-y-3 mb-6">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Ara Toplam</span>
-                    <span>{subtotal?.toLocaleString("tr-TR") || "0"} ₺</span>
+              <form onSubmit={handleSubmit}>
+                {/* Payment Method */}
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <h2 className="text-lg font-bold mb-4">Ödeme Yöntemi</h2>
+                  <div className="mb-4">
+                    <RadioGroup defaultValue="bank_transfer" onValueChange={(value) => setPaymentMethod(value)}>
+                      <div className="flex items-center space-x-2 p-3 border rounded-md bg-gray-50 opacity-60">
+                        <RadioGroupItem value="credit_card" id="credit_card" disabled />
+                        <Label htmlFor="credit_card" className="text-gray-500">
+                          Kredi Kartı <span className="text-sm">(Bakımda)</span>
+                        </Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2 p-3 border rounded-md hover:bg-gray-50">
+                        <RadioGroupItem value="bank_transfer" id="bank_transfer" />
+                        <Label htmlFor="bank_transfer">Banka Havalesi / EFT</Label>
+                      </div>
+                    </RadioGroup>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Kargo</span>
-                    <span>{shipping === 0 ? "Ücretsiz" : `${shipping?.toLocaleString("tr-TR") || "0"} ₺`}</span>
+
+                  {paymentMethod === "bank_transfer" && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-md">
+                      <h3 className="font-medium mb-2">Havale/EFT Bilgileri</h3>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p>
+                          <span className="font-medium">Banka:</span> {bankName}
+                        </p>
+                        <p>
+                          <span className="font-medium">Hesap Sahibi:</span> {accountHolder}
+                        </p>
+                        <p>
+                          <span className="font-medium">IBAN:</span> {iban}
+                        </p>
+                        <p className="mt-2 text-xs">
+                          Ödemenizi yaptıktan sonra sipariş numaranızı açıklama kısmına yazmayı unutmayınız.
+                        </p>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="flex items-center justify-center space-x-3 p-3 bg-white rounded-md border">
+                          <div className="flex-shrink-0">
+                            {bankName.toLowerCase().includes("akbank") && (
+                              <img src="/akbank-logo-red-white.png" alt="Akbank" className="h-8" />
+                            )}
+                            {bankName.toLowerCase().includes("garanti") && (
+                              <img src="/garanti-bbva-logo-green-white.png" alt="Garanti BBVA" className="h-8" />
+                            )}
+                            {bankName.toLowerCase().includes("yapı kredi") && (
+                              <img src="/yap--kredi-logo-blue-white.png" alt="Yapı Kredi" className="h-8" />
+                            )}
+                            {bankName.toLowerCase().includes("ziraat") && (
+                              <img src="/ziraat-bankas--logo-green-white.png" alt="Ziraat Bankası" className="h-8" />
+                            )}
+                            {bankName.toLowerCase().includes("işbank") && (
+                              <img src="/---bankas--logo-blue-white.png" alt="İş Bankası" className="h-8" />
+                            )}
+                            {bankName.toLowerCase().includes("vakıfbank") && (
+                              <img src="/vak-fbank-logo-red-white.png" alt="VakıfBank" className="h-8" />
+                            )}
+                            {!bankName.toLowerCase().includes("akbank") &&
+                              !bankName.toLowerCase().includes("garanti") &&
+                              !bankName.toLowerCase().includes("yapı kredi") &&
+                              !bankName.toLowerCase().includes("ziraat") &&
+                              !bankName.toLowerCase().includes("işbank") &&
+                              !bankName.toLowerCase().includes("vakıfbank") && (
+                                <img src="/generic-bank-logo-blue-white.png" alt={bankName} className="h-8" />
+                              )}
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-medium text-gray-800">
+                              Ödemeleriniz <span className="text-primary font-semibold">{bankName}</span>{" "}
+                              güvencesindedir
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">Güvenli ödeme sistemi</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dekont Yükleme */}
+                  {paymentMethod === "bank_transfer" && (
+                    <div className="mb-4">
+                      <Label htmlFor="receipt" className="block mb-2">
+                        Dekont Yükleme <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="flex items-center">
+                        <input
+                          type="file"
+                          id="receipt"
+                          ref={fileInputRef}
+                          onChange={handleFileChange}
+                          className="hidden"
+                          accept=".pdf"
+                          required
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex items-center"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Dekont Yükle (Sadece PDF)
+                        </Button>
+                        {receiptFile && (
+                          <span className="ml-3 text-sm text-gray-600">
+                            {receiptFile.name} ({Math.round(receiptFile.size / 1024)} KB)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Ödemenizi yaptıktan sonra dekontu PDF formatında yüklemeniz gerekmektedir.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex items-start bg-yellow-50 p-3 rounded-md">
+                    <AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
+                    <p className="text-sm text-yellow-800">
+                      Ödemenizi yaptıktan sonra sipariş numaranızı açıklama kısmına yazmayı unutmayınız.
+                    </p>
                   </div>
-                  <div className="border-t pt-3 mt-3">
-                    <div className="flex justify-between font-bold">
-                      <span>Toplam</span>
-                      <span className="text-xl">{total?.toLocaleString("tr-TR") || "0"} ₺</span>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
+                  <h3 className="font-medium mb-4">Sözleşmeler</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="accept_terms"
+                        checked={acceptTerms}
+                        onCheckedChange={(checked) => setAcceptTerms(!!checked)}
+                        required
+                      />
+                      <Label htmlFor="accept_terms" className="text-sm">
+                        <span className="text-gray-700">
+                          <a
+                            href="/kullanim-kosullari"
+                            target="_blank"
+                            className="text-primary hover:underline"
+                            rel="noreferrer"
+                          >
+                            Kullanım Koşulları
+                          </a>
+                          'nı okudum ve kabul ediyorum.
+                        </span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="accept_privacy"
+                        checked={acceptPrivacy}
+                        onCheckedChange={(checked) => setAcceptPrivacy(!!checked)}
+                        required
+                      />
+                      <Label htmlFor="accept_privacy" className="text-sm">
+                        <span className="text-gray-700">
+                          <a
+                            href="/gizlilik-politikasi"
+                            target="_blank"
+                            className="text-primary hover:underline"
+                            rel="noreferrer"
+                          >
+                            Gizlilik Politikası
+                          </a>
+                          'nı okudum ve kabul ediyorum.
+                        </span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="accept_distance_sales"
+                        checked={acceptDistanceSales}
+                        onCheckedChange={(checked) => setAcceptDistanceSales(!!checked)}
+                        required
+                      />
+                      <Label htmlFor="accept_distance_sales" className="text-sm">
+                        <span className="text-gray-700">
+                          <a
+                            href="/mesafeli-satis-sozlesmesi"
+                            target="_blank"
+                            className="text-primary hover:underline"
+                            rel="noreferrer"
+                          >
+                            Mesafeli Satış Sözleşmesi
+                          </a>
+                          'ni okudum ve kabul ediyorum.
+                        </span>
+                      </Label>
                     </div>
                   </div>
                 </div>
 
-                <div className="mb-6">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Checkbox
-                      id="accept_terms"
-                      checked={acceptTerms}
-                      onCheckedChange={(checked) => setAcceptTerms(!!checked)}
-                      required
-                    />
-                    <Label htmlFor="accept_terms" className="text-sm">
-                      <span className="text-gray-700">
-                        <a
-                          href="/kullanim-kosullari"
-                          target="_blank"
-                          className="text-primary hover:underline"
-                          rel="noreferrer"
-                        >
-                          Kullanım Koşulları
-                        </a>
-                        'nı okudum ve kabul ediyorum.
-                      </span>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Checkbox
-                      id="accept_privacy"
-                      checked={acceptPrivacy}
-                      onCheckedChange={(checked) => setAcceptPrivacy(!!checked)}
-                      required
-                    />
-                    <Label htmlFor="accept_privacy" className="text-sm">
-                      <span className="text-gray-700">
-                        <a
-                          href="/gizlilik-politikasi"
-                          target="_blank"
-                          className="text-primary hover:underline"
-                          rel="noreferrer"
-                        >
-                          Gizlilik Politikası
-                        </a>
-                        'nı okudum ve kabul ediyorum.
-                      </span>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="accept_distance_sales"
-                      checked={acceptDistanceSales}
-                      onCheckedChange={(checked) => setAcceptDistanceSales(!!checked)}
-                      required
-                    />
-                    <Label htmlFor="accept_distance_sales" className="text-sm">
-                      <span className="text-gray-700">
-                        <a
-                          href="/mesafeli-satis-sozlesmesi"
-                          target="_blank"
-                          className="text-primary hover:underline"
-                          rel="noreferrer"
-                        >
-                          Mesafeli Satış Sözleşmesi
-                        </a>
-                        'ni okudum ve kabul ediyorum.
-                      </span>
-                    </Label>
+                <div className="flex justify-end mt-6">
+                  <Button type="submit" className="px-8" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sipariş Oluşturuluyor...
+                      </>
+                    ) : (
+                      "Siparişi Tamamla"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Order Summary - Always visible */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-20">
+              <h2 className="text-lg font-bold mb-4">Sipariş Özeti</h2>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Ara Toplam</span>
+                  <span>{subtotal?.toLocaleString("tr-TR") || "0"} ₺</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Kargo</span>
+                  <span>{shipping === 0 ? "Ücretsiz" : `${shipping?.toLocaleString("tr-TR") || "0"} ₺`}</span>
+                </div>
+                <div className="border-t pt-3 mt-3">
+                  <div className="flex justify-between font-bold">
+                    <span>Toplam</span>
+                    <span className="text-xl">{total?.toLocaleString("tr-TR") || "0"} ₺</span>
                   </div>
                 </div>
-
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sipariş Oluşturuluyor...
-                    </>
-                  ) : (
-                    "Siparişi Tamamla"
-                  )}
-                </Button>
               </div>
             </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )
