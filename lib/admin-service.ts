@@ -235,10 +235,16 @@ export async function getProduct(id: number): Promise<Product | null> {
 // Create a new product
 export async function createProduct(product: Omit<Product, "id" | "created_at">): Promise<Product | null> {
   try {
-    // Eğer image_urls bir dizi ise, doğrudan kullan
-    // Değilse ve string ise, tek elemanlı bir diziye dönüştür
+    if (!product.name || !product.slug || !product.price || !product.category_id) {
+      console.error("Ürün oluşturulurken hata: Gerekli alanlar eksik")
+      throw new Error("Gerekli alanlar eksik: name, slug, price, category_id")
+    }
+
     const processedProduct = {
       ...product,
+      // Ensure description is not undefined
+      description: product.description || "",
+      // Process image_urls properly
       image_urls: product.image_urls
         ? Array.isArray(product.image_urls)
           ? product.image_urls
@@ -246,25 +252,27 @@ export async function createProduct(product: Omit<Product, "id" | "created_at">)
         : [],
     }
 
+    console.log("[v0] Creating product with data:", processedProduct)
+
     const { data, error } = await supabase.from("products").insert([processedProduct]).select().single()
 
     if (error) {
       console.error("Ürün oluşturulurken hata:", error.message)
-      throw new Error(error.message)
+      console.error("Hata detayları:", error)
+      throw new Error(`Veritabanı hatası: ${error.message}`)
     }
 
+    console.log("[v0] Product created successfully:", data)
     return data as Product
   } catch (error) {
     console.error("Ürün oluşturulurken hata:", error)
-    return null
+    throw error
   }
 }
 
 // Update a product
 export async function updateProduct(id: number, product: Partial<Product>): Promise<Product | null> {
   try {
-    // Eğer image_urls bir dizi ise, doğrudan kullan
-    // Değilse ve string ise, tek elemanlı bir diziye dönüştür
     const processedProduct = {
       ...product,
       image_urls: product.image_urls

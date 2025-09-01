@@ -819,28 +819,24 @@ export default function Checkout() {
                         <div className="flex items-center justify-center space-x-3 p-3 bg-white rounded-md border">
                           <div className="flex-shrink-0">
                             {bankName.toLowerCase().includes("akbank") && (
-                              <img src="/akbank-logo-red-white.png" alt="Akbank" className="h-8" />
+                              <img src="/akbank-logo.png" alt="Akbank" className="h-8" />
                             )}
                             {bankName.toLowerCase().includes("garanti") && (
-                              <img src="/garanti-bbva-logo-green-white.png" alt="Garanti BBVA" className="h-8" />
+                              <img src="/garanti-logo.jpeg" alt="Garanti BBVA" className="h-8" />
                             )}
                             {bankName.toLowerCase().includes("yapı kredi") && (
-                              <img src="/yap--kredi-logo-blue-white.png" alt="Yapı Kredi" className="h-8" />
+                              <img src="/yapikredi-logo.png" alt="Yapı Kredi" className="h-8" />
                             )}
                             {bankName.toLowerCase().includes("ziraat") && (
-                              <img src="/ziraat-bankas--logo-green-white.png" alt="Ziraat Bankası" className="h-8" />
-                            )}
-                            {bankName.toLowerCase().includes("işbank") && (
-                              <img src="/---bankas--logo-blue-white.png" alt="İş Bankası" className="h-8" />
+                              <img src="/ziraat-logo.jpeg" alt="Ziraat Bankası" className="h-8" />
                             )}
                             {bankName.toLowerCase().includes("vakıfbank") && (
-                              <img src="/vak-fbank-logo-red-white.png" alt="VakıfBank" className="h-8" />
+                              <img src="/vakifbank-logo.png" alt="VakıfBank" className="h-8" />
                             )}
                             {!bankName.toLowerCase().includes("akbank") &&
                               !bankName.toLowerCase().includes("garanti") &&
                               !bankName.toLowerCase().includes("yapı kredi") &&
                               !bankName.toLowerCase().includes("ziraat") &&
-                              !bankName.toLowerCase().includes("işbank") &&
                               !bankName.toLowerCase().includes("vakıfbank") && (
                                 <img src="/generic-bank-logo-blue-white.png" alt={bankName} className="h-8" />
                               )}
@@ -888,6 +884,26 @@ export default function Checkout() {
                           </span>
                         )}
                       </div>
+                      {receiptFile && (
+                        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0">
+                              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                  fillRule="evenodd"
+                                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </div>
+                            <div className="ml-3">
+                              <p className="text-sm text-blue-800">
+                                <strong>Dekont kontrol ediliyor.</strong> Onaylandığı zaman aranacaksınız.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       <p className="text-xs text-gray-500 mt-2">
                         Ödemenizi yaptıktan sonra dekontu PDF formatında yüklemeniz gerekmektedir.
                       </p>

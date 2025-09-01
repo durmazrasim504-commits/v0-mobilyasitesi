@@ -226,10 +226,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       const uploadedImageUrls: string[] = []
 
       if (tempImages.length > 0) {
+        const tempProductId = isNewProduct ? "temp" : productId.toString()
+
         for (const file of tempImages) {
           const formData = new FormData()
           formData.append("image", file)
-          formData.append("productId", productId.toString())
+          formData.append("productId", tempProductId)
 
           const response = await fetch("/api/admin/product-images", {
             method: "POST",
@@ -254,7 +256,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       const productData = {
         name,
         slug,
-        description,
+        description: description || "", // Ensure description is never undefined
         price: Number.parseFloat(price),
         original_price: originalPrice ? Number.parseFloat(originalPrice) : null,
         discount_percentage: discountPercentage ? Number.parseInt(discountPercentage, 10) : null,
@@ -266,15 +268,30 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         image_urls: isNewProduct ? uploadedImageUrls : undefined,
       }
 
+      console.log("[v0] Submitting product data:", productData)
+
       if (isNewProduct) {
-        // Create new product
-        const newProduct = await createProduct(productData)
-        if (newProduct) {
+        try {
+          const newProduct = await createProduct(productData)
+
+          // Clear temporary images after successful creation
+          setTempImages([])
+          setTempImagePreviews([])
+
           toast({
             title: "Success",
             description: "Product created successfully.",
           })
           router.push(`/admin/products/${newProduct.id}`)
+        } catch (createError) {
+          console.error("Error creating product:", createError)
+          const errorMessage = createError instanceof Error ? createError.message : "Unknown error occurred"
+          toast({
+            variant: "destructive",
+            title: "Error Creating Product",
+            description: errorMessage,
+          })
+          throw createError
         }
       } else {
         // Update existing product
@@ -289,11 +306,15 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       }
     } catch (error) {
       console.error(isNewProduct ? "Error creating product:" : "Error updating product:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: isNewProduct ? "Error creating product." : "Error updating product.",
-      })
+      if (isNewProduct) {
+        // Error already handled above for new products
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Error updating product.",
+        })
+      }
     } finally {
       setIsSaving(false)
     }
@@ -326,32 +347,35 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       // Parse the image ID to get the index
       const parts = imageId.split("-")
       const imageIndex = Number(parts[1])
-      
+
       // Get the image URL
       const imageUrl = images[imageIndex]?.url
-      
+
       if (!imageUrl) {
         throw new Error("Image not found")
       }
-      
+
       // Delete the image using the new API
-      const response = await fetch(`/api/admin/product-images?productId=${productId}&imageUrl=${encodeURIComponent(imageUrl)}`, {
-        method: "DELETE",
-      })
+      const response = await fetch(
+        `/api/admin/product-images?productId=${productId}&imageUrl=${encodeURIComponent(imageUrl)}`,
+        {
+          method: "DELETE",
+        },
+      )
 
       if (!response.ok) {
         throw new Error("Error deleting image")
       }
 
       const data = await response.json()
-      
+
       if (data.success && data.images) {
         setImages(data.images)
       } else {
         // Fallback: Remove from local state if API doesn't return updated images
         setImages(images.filter((img) => img.id !== imageId))
       }
-      
+
       toast({
         title: "Success",
         description: "Image deleted successfully.",
@@ -385,7 +409,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     for (let i = 0; i < files.length; i++) {
       formData.append("image", files[i])
     }
-    
+
     // Add the product ID
     formData.append("productId", productId.toString())
 
@@ -441,14 +465,14 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       // Parse the image ID to get the index
       const parts = imageId.split("-")
       const imageIndex = Number(parts[1])
-      
+
       // Get the image URL
       const imageUrl = images[imageIndex]?.url
-      
+
       if (!imageUrl) {
         throw new Error("Image not found")
       }
-      
+
       // Set the image as primary using the new API
       const response = await fetch("/api/admin/product-images", {
         method: "PUT",
@@ -466,7 +490,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       }
 
       const data = await response.json()
-      
+
       if (data.success && data.images) {
         setImages(data.images)
       } else {
@@ -684,7 +708,11 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     ref={fileInputRef}
                     multiple
                   />
-                  <Button variant="outline" className="ml-2" onClick={() => fileInputRef.current?.click()}>
+                  <Button
+                    variant="outline"
+                    className="ml-2 bg-transparent"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <Upload className="h-4 w-4 mr-2" />
                     Select
                   </Button>
@@ -783,7 +811,9 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Product</DialogTitle>
-            <DialogDescription>Are you sure you want to delete this product? This action cannot be undone.</DialogDescription>
+            <DialogDescription>
+              Are you sure you want to delete this product? This action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>

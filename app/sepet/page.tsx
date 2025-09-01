@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useCart } from "@/contexts/cart-context"
 import { useSiteSettings } from "@/contexts/site-settings-context"
-import { ShoppingBag, Trash2, CreditCard, Truck, AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react"
+import { ShoppingBag, Trash2, CreditCard, Truck, AlertTriangle, ArrowLeft } from "lucide-react"
 import CartItem from "@/components/cart/cart-item"
 
 export default function Cart() {
@@ -116,7 +115,7 @@ export default function Cart() {
             <div className="bg-gray-50 p-6 border-t border-gray-100">
               <div className="flex flex-col sm:flex-row justify-between">
                 <div className="flex items-center mb-4 sm:mb-0">
-                  <Button variant="outline" className="mr-2" onClick={() => clearCart()}>
+                  <Button variant="outline" className="mr-2 bg-transparent" onClick={() => clearCart()}>
                     <Trash2 className="h-4 w-4 mr-2" />
                     Sepeti Temizle
                   </Button>
@@ -177,41 +176,6 @@ export default function Cart() {
                   </div>
                 </div>
               </div>
-
-              <Link href="/siparis">
-                <Button className="w-full mb-3 bg-green-600 hover:bg-green-700">
-                  Siparişi Tamamla
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-
-              {/* "veya" yazısı */}
-              <div className="relative my-3 text-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-white px-4 text-sm text-gray-500">veya</span>
-                </div>
-              </div>
-
-              {/* PTT ile Güvenli Ödeme Butonu */}
-              <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="block w-full">
-                <Button variant="outline" className="w-full h-12 border-[#00a8cc] hover:bg-gray-50">
-                  <div className="flex items-center justify-center w-full">
-                    <div className="flex items-center">
-                      <Image
-                        src="/ptt-logo.png"
-                        alt="PTT Logo"
-                        width={60}
-                        height={24}
-                        className="object-contain mr-2"
-                      />
-                      <span className="text-[#00a8cc] font-medium">ile Güvenli Ödeme</span>
-                    </div>
-                  </div>
-                </Button>
-              </a>
 
               <div className="mt-6 space-y-4">
                 <div className="flex items-center text-sm text-gray-600">
